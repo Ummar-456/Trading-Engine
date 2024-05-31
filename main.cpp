@@ -30,7 +30,7 @@ std::vector<Order> readOrdersFromCSV(const std::string& filename) {
             continue; // Skip lines with errors
         }
 
-        // Alternate between BUY and SELL orders for the sake of example
+        // Alternate between BUY and SELL orders 
         OrderType type = (id % 2 == 0) ? BUY : SELL;
         orders.emplace_back(id, type, price, quantity);
         id++;
