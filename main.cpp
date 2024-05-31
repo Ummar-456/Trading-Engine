@@ -46,7 +46,7 @@ int main() {
         orderBook.start();
 
         // Read orders from the CSV file
-        std::vector<Order> orders = readOrdersFromCSV("data/market_data.csv");
+        std::vector<Order> orders = readOrdersFromCSV("market_data.csv");
 
         // Add orders to the order book
         for (const auto& order : orders) {
