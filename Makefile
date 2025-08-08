@@ -1,5 +1,5 @@
 CXX := g++
-CXXFLAGS := -O3 -march=native -mtune=native -flto -fno-rtti -DNDEBUG -Wall -Wextra -Wpedantic -std=c++17 -pipe
+CXXFLAGS := -O3 -march=native -mtune=native -flto -fno-rtti -DNDEBUG -Wall -Wextra -Wpedantic -std=c++17 -pipe -DLOG_ENABLED=0
 LDFLAGS := -pthread -flto -s
 
 SRC := main.cpp Order.cpp Orderbook.cpp Logger.cpp

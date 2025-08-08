@@ -1,6 +1,9 @@
 #include "Orderbook.h"
 #include "Logger.h"
+#include "TemplateLogger.h"
 #include <iomanip>
+
+using CompileLogger = LoggerT<LOG_ENABLED>;
 
 OrderBook::OrderBook() : running(false), processedOrders(0) {}
 
@@ -10,7 +13,7 @@ OrderBook::~OrderBook() {
 
 void OrderBook::addOrder(const Order& order) {
     std::lock_guard<std::mutex> lock(bookMutex);
-    Logger::getInstance().log("Adding order: " + std::to_string(order.id));
+    CompileLogger::log("Adding order: " + std::to_string(order.id));
     if (order.type == BUY || order.type == MARKET || order.type == STOP) {
         buyOrders[order.price].push(order);
     }
@@ -21,7 +24,7 @@ void OrderBook::addOrder(const Order& order) {
 }
 
 void OrderBook::cancelOrder(int orderId) {
-    Logger::getInstance().log("Cancelling order: " + std::to_string(orderId));
+    CompileLogger::log("Cancelling order: " + std::to_string(orderId));
     // Simplified cancellation logic
 }
 
@@ -91,7 +94,7 @@ void OrderBook::matchOrders() {
                     sellOrder.status = PARTIALLY_FILLED;
                 }
 
-                Logger::getInstance().log("Matched order: " + std::to_string(buyOrder.id) +
+                CompileLogger::log("Matched order: " + std::to_string(buyOrder.id) +
                     " with order: " + std::to_string(sellOrder.id));
                 processedOrders++;
                 matchedOrders.push_back(buyOrder);
@@ -194,7 +197,7 @@ void OrderBook::processBatch(std::vector<Order>& batch) {
                 sellOrder.status = PARTIALLY_FILLED;
             }
 
-            Logger::getInstance().log("Matched order: " + std::to_string(buyOrder.id) +
+            CompileLogger::log("Matched order: " + std::to_string(buyOrder.id) +
                 " with order: " + std::to_string(sellOrder.id));
             processedOrders++;
             matchedOrders.push_back(buyOrder);
