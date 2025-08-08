@@ -15,6 +15,7 @@ public:
     void log(const std::string& message);
     void start();
     void stop();
+    void setEnabled(bool isEnabled);
 
 private:
     Logger();
@@ -25,6 +26,7 @@ private:
     std::queue<std::string> logQueue;
     std::thread logThread;
     std::atomic<bool> running;
+    std::atomic<bool> enabled{true};
 
     void processLogs();
 };

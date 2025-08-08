@@ -8,7 +8,7 @@
 #include <thread>
 #include <atomic>
 #include <chrono>
-#include "order.h"
+#include "Order.h"
 
 struct Trade {
     int buyOrderId;
@@ -34,13 +34,16 @@ public:
     void printMatchedOrders() const;
     void printOrderBookDepth() const;
     void printTradeExecutions() const;
+    // New limited-output helpers
+    void printOrderBookDepth(std::size_t topLevels) const;
+    void printTradeExecutions(std::size_t maxRows) const;
 
 private:
     std::map<double, std::queue<Order>> buyOrders;
     std::map<double, std::queue<Order>> sellOrders;
     std::vector<Order> matchedOrders;
     std::vector<Trade> executedTrades;
-    std::mutex buyMutex, sellMutex, bookMutex;
+    std::mutex bookMutex;
     std::condition_variable cv;
     std::vector<std::thread> workerThreads;
     std::atomic<bool> running;
