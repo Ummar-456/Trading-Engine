@@ -1,5 +1,5 @@
-#include "orderbook.h"
-#include "logger.h"
+#include "Orderbook.h"
+#include "Logger.h"
 #include <iomanip>
 
 OrderBook::OrderBook() : running(false), processedOrders(0) {}
@@ -9,7 +9,7 @@ OrderBook::~OrderBook() {
 }
 
 void OrderBook::addOrder(const Order& order) {
-    std::lock_guard<std::mutex> lock(order.type == BUY || order.type == MARKET || order.type == STOP ? buyMutex : sellMutex);
+    std::lock_guard<std::mutex> lock(bookMutex);
     Logger::getInstance().log("Adding order: " + std::to_string(order.id));
     if (order.type == BUY || order.type == MARKET || order.type == STOP) {
         buyOrders[order.price].push(order);
@@ -28,7 +28,7 @@ void OrderBook::cancelOrder(int orderId) {
 void OrderBook::start() {
     running = true;
     startTime = std::chrono::high_resolution_clock::now();
-    int threadCount = std::thread::hardware_concurrency();
+    int threadCount = 1; // single worker to reduce contention and scheduling overhead
     for (int i = 0; i < threadCount; ++i) {
         workerThreads.emplace_back(&OrderBook::processOrders, this);
     }
@@ -144,10 +144,7 @@ void OrderBook::processOrders() {
                 break;
             }
 
-            std::lock_guard<std::mutex> buyLock(buyMutex);
-            std::lock_guard<std::mutex> sellLock(sellMutex);
-
-            // Batch processing
+            // Batch processing under single mutex
             auto buyIt = buyOrders.rbegin();
             auto sellIt = sellOrders.begin();
 
@@ -221,6 +218,23 @@ void OrderBook::printTradeExecutions() const {
     }
 }
 
+void OrderBook::printTradeExecutions(std::size_t maxRows) const {
+    if (maxRows == 0) {
+        return;
+    }
+    std::cout << "Trade Executions (last " << maxRows << "):" << std::endl;
+    std::size_t total = executedTrades.size();
+    std::size_t startIndex = total > maxRows ? total - maxRows : 0;
+    for (std::size_t i = startIndex; i < total; ++i) {
+        const auto& trade = executedTrades[i];
+        std::cout << "Buy Order ID: " << trade.buyOrderId
+            << ", Sell Order ID: " << trade.sellOrderId
+            << ", Buy Price: " << std::fixed << std::setprecision(3) << trade.buyPrice
+            << ", Sell Price: " << std::fixed << std::setprecision(3) << trade.sellPrice
+            << ", Quantity: " << trade.quantity << std::endl;
+    }
+}
+
 int OrderBook::getProcessedOrderCount() const {
     return processedOrders;
 }
@@ -247,6 +261,26 @@ void OrderBook::printOrderBookDepth() const {
     for (const auto& entry : sellOrders) {
         std::cout << "Price: " << entry.first << ", Quantity: " << entry.second.size()
             << std::endl;
+    }
+}
+
+void OrderBook::printOrderBookDepth(std::size_t topLevels) const {
+    if (topLevels == 0) {
+        return;
+    }
+    std::cout << std::fixed << std::setprecision(3);
+    std::cout << "Top " << topLevels << " Levels:" << std::endl;
+
+    std::cout << "Buy Orders (best to worse):" << std::endl;
+    std::size_t count = 0;
+    for (auto it = buyOrders.rbegin(); it != buyOrders.rend() && count < topLevels; ++it, ++count) {
+        std::cout << "Price: " << it->first << ", Quantity: " << it->second.size() << std::endl;
+    }
+
+    std::cout << "Sell Orders (best to worse):" << std::endl;
+    count = 0;
+    for (auto it = sellOrders.begin(); it != sellOrders.end() && count < topLevels; ++it, ++count) {
+        std::cout << "Price: " << it->first << ", Quantity: " << it->second.size() << std::endl;
     }
 }
 

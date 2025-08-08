@@ -1,4 +1,4 @@
-#include "logger.h"
+#include "Logger.h"
 
 Logger::Logger() : running(false) {
     logFile.open("trading_engine.log", std::ios::app);
@@ -16,7 +16,14 @@ Logger& Logger::getInstance() {
     return instance;
 }
 
+void Logger::setEnabled(bool isEnabled) {
+    enabled.store(isEnabled, std::memory_order_relaxed);
+}
+
 void Logger::log(const std::string& message) {
+    if (!enabled.load(std::memory_order_relaxed)) {
+        return;
+    }
     {
         std::lock_guard<std::mutex> lock(queueMutex);
         logQueue.push(message);
@@ -25,11 +32,17 @@ void Logger::log(const std::string& message) {
 }
 
 void Logger::start() {
+    if (!enabled.load(std::memory_order_relaxed)) {
+        return;
+    }
     running = true;
     logThread = std::thread(&Logger::processLogs, this);
 }
 
 void Logger::stop() {
+    if (!enabled.load(std::memory_order_relaxed)) {
+        return;
+    }
     running = false;
     cv.notify_all();
     if (logThread.joinable()) {
